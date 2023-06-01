@@ -1,51 +1,124 @@
 #include "binary_trees.h"
 
 /**
- * binary_tree_size - measures the size of a binary tree
- * @tree: input binary tree
- * Return: number of descendant child nodes
+ * enqueue_item_1 - Adds an item to a queue.
+ * @queue_h: A pointer to the queue's head.
+ * @queue_t: A pointer to the queue's tail.
+ * @n: A pointer to the queue's size value.
+ * @item: The item to add to the queue.
  */
-size_t binary_tree_size(const binary_tree_t *tree)
+void enqueue_item_1(binary_tree_t **queue_h, binary_tree_t **queue_t,
+	int *n, void *item)
 {
-	if (!tree)
-		return (0);
+	binary_tree_t *new_node;
+	binary_tree_t *node = (binary_tree_t *)item;
 
-	return (1 + binary_tree_size(tree->left) + binary_tree_size(tree->right));
+	if ((queue_h != NULL) && (queue_t != NULL))
+	{
+		new_node = malloc(sizeof(binary_tree_t));
+		if (new_node == NULL)
+			return;
+		new_node->left = *queue_t;
+		new_node->right = NULL;
+		new_node->n = (node != NULL ? node->n : -1);
+		new_node->parent = node;
+		if (*queue_h == NULL)
+			*queue_h = new_node;
+		if (*queue_t != NULL)
+			(*queue_t)->right = new_node;
+		*queue_t = new_node;
+		if (n != NULL)
+			(*n)++;
+	}
 }
 
 /**
- * is_complete - helper func for binary_tree_is_complete
- * @tree: pointer to root of tree
- * @index: index of current node to be verified
- * @size: total number of nodes in tree
- * Return: 1 if true 0 if false
+ * dequeue_item_1 - Removes an item from a queue.
+ * @queue_h: A pointer to the queue's head.
+ * @queue_t: A pointer to the queue's tail.
+ * @n: A pointer to the queue's size value.
+ *
+ * Return: The value of the removed queue.
  */
-_Bool is_complete(const binary_tree_t *tree, unsigned int index, size_t size)
+binary_tree_t *dequeue_item_1(binary_tree_t **queue_h,
+	binary_tree_t **queue_t, int *n)
 {
-	if (!tree)
-		return (true);
+	binary_tree_t *tmp0;
+	binary_tree_t *tmp1;
+	binary_tree_t *node = NULL;
 
-	if (index >= size)
-		return (false);
-
-	return (is_complete(tree->left, 2 * index + 1, size) &&
-		is_complete(tree->right, 2 * index + 2, size));
+	if ((queue_h != NULL) && (queue_t != NULL))
+	{
+		tmp0 = *queue_h;
+		if (tmp0 != NULL)
+		{
+			node = tmp0->parent;
+			if (tmp0->right != NULL)
+			{
+				tmp1 = tmp0->right;
+				tmp1->left = NULL;
+				*queue_h = tmp1;
+				free(tmp0);
+			}
+			else
+			{
+				free(tmp0);
+				*queue_h = NULL;
+				*queue_t = NULL;
+			}
+			if (n != NULL)
+				(*n)--;
+		}
+	}
+	return (node);
 }
 
-
 /**
- * binary_tree_is_complete - checks if a binary tree is complete
- * @tree: pointer to root of tree
- * Return: 1 if true 0 if false
+ * binary_tree_is_complete - Checks if a binary tree is complete.
+ * @tree: The binary tree.
+ *
+ * Return: 1 if the tree is complete, otherwise 0.
  */
 int binary_tree_is_complete(const binary_tree_t *tree)
 {
-	size_t size;
-	unsigned int i = 0;
+	binary_tree_t *queue_head = NULL;
+	binary_tree_t *queue_tail = NULL;
+	binary_tree_t *current = NULL;
+	int n = 0, stop = 0;
+	int is_complete = 0;
 
-	if (!tree)
-		return (0);
-
-	size = binary_tree_size(tree);
-	return (is_complete(tree, i, size));
+	if (tree != NULL)
+	{
+		is_complete = 1;
+		enqueue_item_1(&queue_head, &queue_tail, &n, (void *)tree);
+		while (n > 0)
+		{
+			current = queue_head;
+			if (current->parent == NULL)
+			{
+				stop = 1;
+			}
+			else
+			{
+				if (stop == 1)
+				{
+					is_complete = 0;
+					break;
+				}
+				else if (current->parent != NULL)
+				{
+					enqueue_item_1(
+						&queue_head, &queue_tail, &n, (void *)(current->parent->left)
+					);
+					enqueue_item_1(
+						&queue_head, &queue_tail, &n, (void *)(current->parent->right)
+					);
+				}
+			}
+			dequeue_item_1(&queue_head, &queue_tail, &n);
+		}
+		while (n > 0)
+			dequeue_item_1(&queue_head, &queue_tail, &n);
+	}
+	return (is_complete);
 }
